@@ -1,6 +1,6 @@
-Role Name
-=========
-This role installs the google and/or ldap identity providers.
+Ansible Role: openshift-identity-provider
+=========================================
+This role installs the google and/or ldap identity providers in OpenShift.
 
 Requirements
 ------------
