@@ -1,0 +1,29 @@
+---
+# This is an example playbook to execute Ansible tests.
+
+- name: Verify
+  hosts: all
+  gather_facts: false
+  tasks:
+  - name: Get identity providers information
+    kubernetes.core.k8s_info:
+      api_version: config.openshift.io/v1
+      kind: OAuth
+      name: cluster
+      namespace: openshift-config
+    register: idp_info
+    
+  - name: Ensure identityprovider path exists and is not empty
+    assert:
+      that:
+      - idp_info.resources[0].spec.identityProviders is defined
+      - idp_info.resources[0].spec.identityProviders | length >= 0
+      - idp_info.resources[0].spec.identityProviders | length <= 2
+
+
+    
+    
+    
+
+    
+  

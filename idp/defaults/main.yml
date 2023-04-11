@@ -1,0 +1,35 @@
+---
+# defaults file for idp
+idp:
+  state: present
+  ldap:
+    enabled: false
+    attributes:
+      email:
+        - ""
+      id:
+        - ""
+      name: 
+        - ""
+      preferredUsername:
+        - ""
+      ca: 
+        - ""
+      insecure: false
+      url: ""
+    mappingMethod: "claim"
+    name: ""
+    type: "LDAP"
+  google:
+    enabled: false
+    name: ""
+    type: "Google"
+    mappingMethod: "claim"
+    clientID: ""
+    clientSecret:
+      value: ""
+      name: ""
+    hostedDomain: "" 
+  users:
+    - name: ""
+      permission: ""

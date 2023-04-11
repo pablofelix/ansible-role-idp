@@ -1,0 +1,56 @@
+---
+- name: Get identity providers information
+  kubernetes.core.k8s_info:
+    api_version: config.openshift.io/v1
+    kind: OAuth
+    name: cluster
+    namespace: openshift-config
+  register: idp_info
+
+- name: Verify identityProviders path exists and if not create it
+  kubernetes.core.k8s_json_patch:
+    api_version: config.openshift.io/v1
+    kind: OAuth
+    name: cluster
+    namespace: openshift-config
+    patch:
+      - op: add
+        path: /spec/identityProviders
+        value: []
+  when: idp_info.resources[0].spec.identityProviders is not defined
+
+- name: Create secret for google idp
+  kubernetes.core.k8s:
+    state: "{{ idp.state }}"
+    definition:
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: "{{ idp.google.clientSecret.name }}"
+        namespace: openshift-config
+      stringData:
+        clientSecret: "{{ idp.google.clientSecret.value }}"
+  when: idp.state == "present"
+
+- name: Create google idp in the cluster ensure the name is unique
+  kubernetes.core.k8s_json_patch:
+    api_version: config.openshift.io/v1
+    kind: OAuth
+    name: cluster
+    namespace: openshift-config
+    patch:
+      - op: add
+        path: /spec/identityProviders/-
+        value:
+          name: "{{ idp.google.name }}"
+          type: "{{ idp.google.type }}"
+          mappingMethod: "{{ idp.google.mappingMethod }}"
+          google:
+            clientID: "{{ idp.google.clientID }}"
+            clientSecret:
+              name: "{{ idp.google.clientSecret.name }}"
+            hostedDomain: "{{ idp.google.hostedDomain }}"
+  when: idp.state == "present" and 
+        idp.google.enabled and 
+        idp_info.resources[0].spec.identityProviders | 
+        selectattr('name', 'equalto', idp.google.name) | list | count == 0

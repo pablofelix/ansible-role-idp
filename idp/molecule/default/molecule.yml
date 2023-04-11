@@ -1,0 +1,18 @@
+---
+driver:
+  name: delegated
+  options:
+    managed: False
+    login_cmd_template: 'export KUBECONFIG={{ lookup("env", "KUBECONFIG") }}'
+    ansible_connection_options:
+      ansible_connection: local
+
+platforms:
+  - name: instance
+    hostname: localhost
+
+provisioner:
+  name: ansible
+
+verifier:
+  name: ansible

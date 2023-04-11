@@ -1,0 +1,53 @@
+---
+- name: Get configmap for LDAP CA
+  kubernetes.core.k8s_info:
+    api_version: v1
+    kind: ConfigMap
+    name: "{{ idp.ldap.attributes.ca[0] }}"
+    namespace: openshift-config
+  register: ldap_ca
+
+- name: Create configmap for LDAP CA
+  kubernetes.core.k8s:
+    state: "{{ idp.state }}"
+    definition:
+      apiVersion: v1
+      kind: ConfigMap
+      metadata:
+        name: "{{ idp.ldap.attributes.ca[0] }}"
+        namespace: openshift-config
+      data:
+        ca.crt: |-
+          {{ lookup('file', 'ca.crt', paths=['{{ role_path }}/files']) }} 
+  when: idp.state == "present" and ldap_ca.resources | length == 0
+
+- name: Create LDAP idp in the cluster ensure the name is unique
+  kubernetes.core.k8s_json_patch:
+    api_version: config.openshift.io/v1
+    kind: OAuth
+    name: cluster
+    namespace: openshift-config
+    patch:
+      - op: add
+        path: /spec/identityProviders/-
+        value:
+          name: "{{ idp.ldap.name }}"
+          type: "{{ idp.ldap.type }}"
+          mappingMethod: "{{ idp.ldap.mappingMethod }}"
+          ldap:
+            attributes:
+              email:
+                - "{{ idp.ldap.attributes.email[0] }}"
+              id:
+                - "{{ idp.ldap.attributes.id[0] }}"
+              name:
+                - "{{ idp.ldap.attributes.name[0] }}"
+              preferredUsername:
+                - "{{ idp.ldap.attributes.preferredUsername[0] }}"
+            insecure: "{{ idp.ldap.attributes.insecure }}"
+            url: "{{ idp.ldap.attributes.url }}"
+            ca:
+              name: "{{ idp.ldap.attributes.ca[0] }}"
+  when: idp.state == "present" and
+        idp.ldap.name not in idp_info.resources[0].spec.identityProviders | 
+        map(attribute='name') | list

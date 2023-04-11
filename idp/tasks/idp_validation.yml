@@ -1,0 +1,58 @@
+---
+- name: Ensure variables are set when ldap is enabled
+  fail:
+    msg: "Please set the following variables: {{ ldap_idp }}"
+  when: idp.ldap.enabled and 
+        idp.ldap[ldap_idp] is not defined
+  loop:
+    - attributes
+    - mappingMethod
+    - name
+    - type
+  loop_control:
+    loop_var: ldap_idp
+
+- name: Ensure variables are set when google is enabled
+  fail:
+    msg: "Please set the following variables: {{ google_idp }}"
+  when: idp.google.enabled and idp.google[google_idp] is not defined
+  loop:
+    - clientID
+    - clientSecret
+    - hostedDomain
+    - mappingMethod
+    - name
+    - type
+  loop_control:
+    loop_var: google_idp
+
+- name: Send a message with the idp that is being configured
+  debug:
+    msg: "Configuring {{ idp_type }} idp"
+  loop:
+    - ldap
+    - google
+  loop_control:
+    loop_var: idp_type
+  when: idp[idp_type].enabled
+
+- name: Get identity providers information
+  kubernetes.core.k8s_info:
+    api_version: config.openshift.io/v1
+    kind: OAuth
+    name: cluster
+    namespace: openshift-config
+  register: idp_info
+
+- name: Create identityProviders path if does not exists
+  kubernetes.core.k8s_json_patch:
+    api_version: config.openshift.io/v1
+    kind: OAuth
+    name: cluster
+    namespace: openshift-config
+    patch:
+      - op: add
+        path: /spec/identityProviders
+        value: []
+  when: idp_info.resources[0].spec.identityProviders is not defined or
+        idp.state == "absent"

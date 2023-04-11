@@ -1,0 +1,25 @@
+---
+- name: Get users names from openshift
+  kubernetes.core.k8s_info:
+    api_version: user.openshift.io/v1
+    kind: User
+  register: users_info
+
+- name: Set role to users
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: rbac.authorization.k8s.io/v1
+      kind: ClusterRoleBinding
+      metadata:
+        name: "{{ item.name }}"
+      roleRef:
+        apiGroup: rbac.authorization.k8s.io
+        kind: ClusterRole
+        name: "{{ item.permission }}"
+      subjects:
+        - apiGroup: rbac.authorization.k8s.io
+          kind: User
+          name: "{{ item.name }}"
+  loop: "{{ idp.users }}"
+  when: item.name in users_info.resources | map(attribute='metadata.name') | list

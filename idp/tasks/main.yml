@@ -1,0 +1,38 @@
+---
+# tasks file for idp
+- name: Get Cluster information from the cluster
+  shell: oc whoami --show-server
+  register: cluster_info
+  changed_when: false
+  failed_when: cluster_info.rc != 0
+  tags:
+    - cluster_info
+
+- name: Show cluster information and verify the url
+  debug:
+    msg: "{{ cluster_info.stdout }}"
+  tags:
+    - cluster_info
+
+- name: Validate idp variables
+  include_tasks: idp_validation.yml
+  tags:
+    - idp
+
+- name: include ldap idp
+  include_tasks: ldap.yml
+  when: idp.ldap.enabled
+  tags:
+    - idp
+
+- name: include google idp
+  include_tasks: google.yml
+  when: idp.google.enabled
+  tags:
+    - idp
+
+- name: Set users permissions
+  include_tasks: permissions.yml
+  when: idp.users is defined
+  tags:
+    - idp

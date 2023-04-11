@@ -1,0 +1,3 @@
+.venv/
+idp/files/ca.crt
+idp/files/google_client.sh
